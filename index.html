@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - IFHAMA Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { background-color: #f0fdf4; font-family: 'Nunito', 'Segoe UI', sans-serif; color: #2d3436; }
+        .navbar { background: linear-gradient(135deg, #115f3b 0%, #198754 100%); box-shadow: 0 4px 20px rgba(25, 135, 84, 0.25); padding: 12px 0; }
+        .card-main { border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.06); background: white; overflow: hidden; margin-bottom: 30px; }
+        .filter-box { background: rgba(255, 255, 255, 0.9); padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; }
+        
+        .table-custom thead th { background-color: #e8f5e9; color: #0f5132; cursor: pointer; white-space: nowrap; }
+        .sort-icon { font-size: 0.8rem; margin-left: 6px; color: #a8b8d8; opacity: 0.6; transition: 0.3s; }
+        .th-active .sort-icon { color: #198754; opacity: 1; }
+        
+        .btn-action { border-radius: 12px; font-weight: 700; padding: 8px 16px; transition: all 0.3s; }
+        .btn-action:hover { transform: translateY(-2px); }
+        .badge-status { font-size: 0.85rem; font-weight: 700; padding: 6px 12px; border-radius: 8px; }
+        .bg-belum { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .bg-sudah { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .mode-audit-active { border: 2px dashed #fbbf24 !important; background-color: #fffbeb; }
+
+        /* Style Khusus Tombol Absensi */
+        .btn-absen { border-radius: 8px; font-weight: 700; padding: 6px 14px; min-width: 75px; transition: 0.2s; }
+        .btn-absen:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .nav-pills .nav-link { color: #198754; font-weight: 700; border-radius: 50px; padding: 8px 20px; margin: 0 5px; }
+        .nav-pills .nav-link.active { background-color: #198754; color: white; box-shadow: 0 4px 10px rgba(25,135,84,0.3); }
+        
+        /* Layout Pembungkus Utama */
+        .main-section { display: none; animation: fadeIn 0.4s; }
+        .main-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand fw-bold" href="#"><i class="fas fa-shield-alt me-2 text-warning"></i>IFHAMA <span class="fw-light opacity-75">Admin</span></a>
+        <button onclick="logout()" class="btn btn-sm btn-light rounded-pill px-4 fw-bold text-success shadow-sm"><i class="fas fa-sign-out-alt me-1"></i> Keluar</button>
+    </div>
+</nav>
+
+<div class="container mt-4 mb-5">
+    
+    <div class="d-flex justify-content-center mb-4 gap-2 flex-wrap">
+        <input type="radio" class="btn-check" name="mainTab" id="tabSantri" checked onchange="gantiRuangan('santri')">
+        <label class="btn btn-outline-success px-4 py-2 fw-bold rounded-pill shadow-sm" for="tabSantri"><i class="fas fa-users me-2"></i>Data Santri</label>
+
+        <input type="radio" class="btn-check" name="mainTab" id="tabAbsen" onchange="gantiRuangan('absen')">
+        <label class="btn btn-outline-success px-4 py-2 fw-bold rounded-pill shadow-sm" for="tabAbsen"><i class="fas fa-user-tie me-2"></i>Absensi Penyimak</label>
+    </div>
+
+    <div id="ruangSantri" class="main-section active">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+            <div>
+                <h3 class="fw-bolder mb-1 text-success"><i class="fas fa-clipboard-list me-2"></i>Audit Buku Santri</h3>
+                <p class="text-muted small mb-0">Kelola setoran buku fisik & hitung tagihan ujian.</p>
+            </div>
+            <div class="filter-box d-flex align-items-center gap-2 flex-wrap shadow-sm">
+                <div class="form-check form-switch fs-5 mb-0 me-2">
+                    <input class="form-check-input shadow-sm" type="checkbox" id="toggleAudit" onchange="toggleMode()" style="cursor: pointer;">
+                    <label class="form-check-label fw-bolder text-danger ms-1" style="font-size: 0.9rem;" for="toggleAudit"><i class="fas fa-calculator me-1"></i> Mode Audit</label>
+                </div>
+                <select class="form-select form-select-sm shadow-sm border-success fw-semibold" id="filterGrup" onchange="renderTabelSantri()" style="width: 140px; border-radius: 10px;">
+                    <option value="ALL">- Semua Grup -</option>
+                    <option value="Putra">Putra</option>
+                    <option value="Putri">Putri</option>
+                </select>
+                <select class="form-select form-select-sm shadow-sm border-success fw-semibold" id="filterPenyimak" onchange="renderTabelSantri()" style="width: 200px; border-radius: 10px;">
+                    <option value="ALL">-- Semua Penyimak --</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="targetUjianContainer" class="d-none mb-4 p-3 shadow-sm rounded-4" style="background: linear-gradient(to right, #fff8e1, #fff3cd); border: 1px solid #ffeeba;">
+             <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                 <div class="d-flex align-items-center gap-3">
+                     <div class="d-flex align-items-center bg-white px-3 py-2 rounded-3 border shadow-sm">
+                         <label class="fw-bold me-2 small text-dark mb-0">Target Tahapan:</label>
+                         <input type="number" id="targetUjian" class="form-control form-control-sm text-center fw-bolder text-danger border-0 p-0" style="width: 50px; font-size: 1.1rem; background:transparent;" value="30" onchange="renderTabelSantri()">
+                     </div>
+                     <button onclick="exportKeExcel()" class="btn btn-success btn-action shadow-sm"><i class="fas fa-file-excel me-1"></i> Export Data</button>
+                 </div>
+                 <button onclick="resetBuku()" class="btn btn-danger btn-action shadow-sm"><i class="fas fa-trash-alt me-1"></i> Reset Pengumpulan</button>
+             </div>
+        </div>
+
+        <div class="card-main" id="areaTabel">
+            <div class="table-responsive">
+                <table class="table table-hover table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th onclick="aturSortir('nama')" id="th-nama">Nama Santri <i class="fas fa-sort sort-icon"></i></th>
+                            <th onclick="aturSortir('kitab')" id="th-kitab">Kitab <i class="fas fa-sort sort-icon"></i></th>
+                            <th onclick="aturSortir('status')" id="th-status">Status Buku IFHAMA <i class="fas fa-sort sort-icon"></i></th>
+                            <th class="text-center" style="width: 280px;" id="headerAksi">Aksi Harian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelDataAdmin">
+                        <tr><td colspan="4" class="text-center py-5 text-muted"><div class="spinner-border text-success spinner-border-sm me-2"></div>Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="ruangAbsen" class="main-section">
+        
+        <div class="text-center mb-4">
+            <h3 class="fw-bolder mb-1 text-success"><i class="fas fa-calendar-check me-2"></i>Sistem Kehadiran Ustadz</h3>
+            <p class="text-muted small mb-0">Catat dan rekap disiplin harian penyimak IFHAMA.</p>
+        </div>
+
+        <ul class="nav nav-pills justify-content-center mb-4 border-bottom pb-3" id="absenTabs" role="tablist">
+            <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tabHarian" type="button"><i class="fas fa-pen-square me-1"></i> Input Harian</button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tabRekap" type="button"><i class="fas fa-chart-pie me-1"></i> Rekapitulasi</button></li>
+        </ul>
+
+        <div class="tab-content" id="absenTabsContent">
+            
+            <div class="tab-pane fade show active" id="tabHarian" role="tabpanel">
+                <div class="card-main p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 border-bottom pb-3">
+                        <h5 class="fw-bold text-dark mb-3 mb-md-0"><i class="far fa-calendar-alt text-primary me-2"></i>Daftar Absensi</h5>
+                        <div class="d-flex align-items-center bg-light p-2 rounded-3 border">
+                            <label class="fw-bold me-2 small text-secondary mb-0">Pilih Tanggal:</label>
+                            <input type="date" id="inputTanggalAbsen" class="form-control form-control-sm fw-bold text-success border-success" onchange="renderAbsenHarian()">
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3 w-25">Nama Ustadz / Penyimak</th>
+                                    <th>Status & Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelInputAbsen">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tabRekap" role="tabpanel">
+                <div class="card-main p-4">
+                    <div class="row align-items-end border-bottom pb-3 mb-3">
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label class="form-label small fw-bold text-secondary">Dari Tanggal:</label>
+                            <input type="date" id="rekapStart" class="form-control form-control-sm border-success">
+                        </div>
+                        <div class="col-md-4 mb-2 mb-md-0">
+                            <label class="form-label small fw-bold text-secondary">Sampai Tanggal:</label>
+                            <input type="date" id="rekapEnd" class="form-control form-control-sm border-success">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-success btn-sm w-100 fw-bold" onclick="renderRekapAbsen()"><i class="fas fa-search me-1"></i> Tampilkan Rekap</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive mt-3">
+                        <table class="table table-hover table-bordered align-middle text-center">
+                            <thead class="table-success">
+                                <tr>
+                                    <th class="text-start ps-3">Nama Penyimak</th>
+                                    <th width="15%">Hadir</th>
+                                    <th width="15%">Izin</th>
+                                    <th width="15%">Alfa</th>
+                                    <th width="20%">Dibadal (Diganti)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelRekapAbsen">
+                                <tr><td colspan="5" class="py-5 text-muted">Silakan pilih rentang tanggal dan klik "Tampilkan Rekap"</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalBadal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-info text-white rounded-top-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-user-friends me-2"></i>Input Data Badal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">Siapa ustadz yang menggantikan <strong id="labelUstadzDiganti" class="text-dark"></strong> hari ini?</p>
+                <input type="hidden" id="hiddenNamaDiganti">
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-secondary">Pilih Nama Pengganti:</label>
+                    <select class="form-select border-info" id="pilihBadal" onchange="cekBadalManual()">
+                        </select>
+                </div>
+                
+                <div class="mb-2 d-none" id="areaBadalManual">
+                    <label class="form-label fw-bold small text-secondary">Ketik Nama Pengganti Baru:</label>
+                    <input type="text" class="form-control border-info" id="inputBadalManual" placeholder="Contoh: Ustadz Ahmad">
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-info text-white fw-bold px-4" onclick="simpanBadal()">Simpan Badal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1060;">
+    <div id="notifToast" class="toast align-items-center text-white border-0 shadow-lg" style="border-radius: 16px;" role="alert">
+        <div class="d-flex"><div class="toast-body fw-bold py-3 px-4" id="toastMessage"></div><button type="button" class="btn-close btn-close-white me-3 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // MASUKKAN URL APPS SCRIPT ANDA DI SINI
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz5TJaBRrrnS6-g8f81FAfKW_vgopn6Pd6sAq-I_okm1w4GodTPdTEtQHAbr4LmsHJU/exec'; 
+
+    let dataSantriLengkap = [];
+    let dataAbsensiLengkap = [];
+    
+    // Variabel Global
+    let sortKolomAktif = 'nama';
+    let sortAscending = true;
+    let daftarPenyimakGlobal = [];
+    let daftarBadalGlobal = []; // Memori auto-harvesting
+
+    // FUNGSI UMUM
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+    function tampilkanNotif(pesan, tipe = 'success') {
+        const toastEl = document.getElementById('notifToast');
+        document.getElementById('toastMessage').innerHTML = tipe === 'success' ? `<i class="fas fa-check-circle me-2"></i> ${pesan}` : `<i class="fas fa-info-circle me-2"></i> ${pesan}`;
+        toastEl.className = `toast align-items-center text-white border-0 shadow-lg bg-${tipe}`;
+        new bootstrap.Toast(toastEl, { delay: 3500 }).show();
+    }
+    function gantiRuangan(ruang) {
+        document.querySelectorAll('.main-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(ruang === 'santri' ? 'ruangSantri' : 'ruangAbsen').classList.add('active');
+        if(ruang === 'absen') { renderAbsenHarian(); }
+    }
+
+    // ==================================================
+    // 1. FUNGSI LOAD DATA (SERVER)
+    // ==================================================
+    function muatDataAdmin() {
+        document.getElementById('tabelDataAdmin').innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted"><div class="spinner-border text-success spinner-border-sm me-2"></div>Memuat data dari server...</td></tr>';
+        
+        fetch(API_URL).then(res => res.json()).then(result => {
+            if(result.status === 'error') throw new Error(result.message);
+            
+            dataSantriLengkap = result.data || [];
+            dataAbsensiLengkap = result.absensi || []; // Datang dari Sheet Absensi_Penyimak
+            
+            // Ekstrak Nama Penyimak Asli
+            daftarPenyimakGlobal = [...new Set(dataSantriLengkap.map(s => String(s.Nama_Penyimak || s.nama_penyimak || "")).filter(p => p !== ""))];
+            
+            // Auto-Harvesting Nama Badal (Ambil nama dari database absen yang diketik manual)
+            daftarBadalGlobal = [...new Set(dataAbsensiLengkap.map(a => String(a.Keterangan_Badal || a.keterangan_badal || "")).filter(b => b !== ""))];
+            
+            // Isi Dropdown Filter Santri
+            let dropdown = document.getElementById('filterPenyimak');
+            dropdown.innerHTML = '<option value="ALL">-- Semua Penyimak --</option>';
+            daftarPenyimakGlobal.forEach(p => { dropdown.innerHTML += `<option value="${p}">${p}</option>`; });
+            
+            // Atur Tanggal Default Absen = Hari Ini
+            if(!document.getElementById('inputTanggalAbsen').value) {
+                document.getElementById('inputTanggalAbsen').value = new Date().toISOString().split('T')[0];
+            }
+
+            renderTabelSantri();
+            renderAbsenHarian();
+        }).catch(err => {
+            document.getElementById('tabelDataAdmin').innerHTML = `<tr><td colspan="4" class="text-center py-5 text-danger fw-bold"><i class="fas fa-exclamation-triangle fs-3 d-block mb-2"></i>Koneksi Gagal. Deploy Versi Baru Apps Script.</td></tr>`;
+            console.error(err);
+        });
+    }
+
+    // ==================================================
+    // 2. FUNGSI ABSENSI PENYIMAK (BARU)
+    // ==================================================
+    function renderAbsenHarian() {
+        let tgl = document.getElementById('inputTanggalAbsen').value;
+        let tbody = document.getElementById('tabelInputAbsen');
+        tbody.innerHTML = '';
+
+        if(daftarPenyimakGlobal.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-4">Belum ada data penyimak.</td></tr>'; return;
+        }
+
+        // Tampilkan urut sesuai abjad
+        daftarPenyimakGlobal.sort().forEach(nama => {
+            // Cari apakah hari ini ustadz tsb sudah diabsen
+            let record = dataAbsensiLengkap.find(a => a.Tanggal === tgl && (a.Nama_Penyimak || a.nama_penyimak) === nama);
+            let status = record ? (record.Status_Kehadiran || record.status_kehadiran) : "";
+            let ket = record ? (record.Keterangan_Badal || record.keterangan_badal) : "";
+
+            // UI Tombol (Warna berubah kalau aktif)
+            let btnHadir = `<button class="btn btn-absen ${status==='Hadir'?'btn-success shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Hadir', '')">Hadir</button>`;
+            let btnIzin  = `<button class="btn btn-absen ${status==='Izin'?'btn-warning text-dark shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Izin', '')">Izin</button>`;
+            let btnAlfa  = `<button class="btn btn-absen ${status==='Alfa'?'btn-danger shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Alfa', '')">Alfa</button>`;
+            
+            let teksBadal = status==='Badal' ? `Badal: ${ket}` : 'Badal...';
+            let btnBadal = `<button class="btn btn-absen ${status==='Badal'?'btn-info text-white shadow':'btn-outline-secondary'}" onclick="bukaModalBadal('${nama}')">${teksBadal}</button>`;
+            
+            let btnBatal = status !== "" ? `<button class="btn btn-sm btn-outline-danger ms-2" title="Batalkan Absen" onclick="hapusAbsen('${nama}')"><i class="fas fa-trash"></i></button>` : '';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-dark ps-3">${nama}</td>
+                    <td><div class="d-flex align-items-center flex-wrap gap-2">${btnHadir}${btnIzin}${btnAlfa}${btnBadal} ${btnBatal}</div></td>
+                </tr>
+            `;
+        });
+    }
+
+    function kirimAbsen(nama, status, keterangan) {
+        let tgl = document.getElementById('inputTanggalAbsen').value;
+        if(!tgl) return alert("Pilih tanggal dulu!");
+        
+        tampilkanNotif("Menyimpan absen...", "primary");
+        fetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'simpan_absen', tanggal: tgl, nama_penyimak: nama, status: status, keterangan_badal: keterangan }) 
+        })
+        .then(res => res.json()).then(res => { tampilkanNotif(res.message); muatDataAdmin(); })
+        .catch(err => { tampilkanNotif("Gagal simpan absen!", "danger"); });
+    }
+
+    function hapusAbsen(nama) {
+        let tgl = document.getElementById('inputTanggalAbsen').value;
+        if(confirm(`Yakin ingin membatalkan/menghapus absensi ${nama} pada tanggal ini?`)) {
+            tampilkanNotif("Menghapus absen...", "primary");
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'hapus_absen', tanggal: tgl, nama_penyimak: nama }) })
+            .then(res => res.json()).then(res => { tampilkanNotif(res.message); muatDataAdmin(); });
+        }
+    }
+
+    // --- LOGIKA POP-UP BADAL ---
+    const modalBadal = new bootstrap.Modal(document.getElementById('modalBadal'));
+    
+    function bukaModalBadal(namaAsli) {
+        document.getElementById('labelUstadzDiganti').innerText = namaAsli;
+        document.getElementById('hiddenNamaDiganti').value = namaAsli;
+        document.getElementById('areaBadalManual').classList.add('d-none');
+        document.getElementById('inputBadalManual').value = "";
+
+        // Susun Smart Dropdown (Gabungan Ustadz Asli + Hasil Panen Auto-Harvest)
+        let select = document.getElementById('pilihBadal');
+        select.innerHTML = '<option value="">-- Pilih Ustadz Pengganti --</option>';
+        
+        // Buat daftar unik tanpa memasukkan nama yang sedang diganti
+        let semuaPilihan = [...new Set([...daftarPenyimakGlobal, ...daftarBadalGlobal])];
+        semuaPilihan.sort().forEach(p => {
+            if(p !== namaAsli) select.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+        
+        select.innerHTML += `<option value="MANUAL" class="fw-bold text-primary">+ Tambah Nama Lain (Manual)...</option>`;
+        modalBadal.show();
+    }
+
+    function cekBadalManual() {
+        let val = document.getElementById('pilihBadal').value;
+        if(val === "MANUAL") document.getElementById('areaBadalManual').classList.remove('d-none');
+        else document.getElementById('areaBadalManual').classList.add('d-none');
+    }
+
+    function simpanBadal() {
+        let namaAsli = document.getElementById('hiddenNamaDiganti').value;
+        let valSelect = document.getElementById('pilihBadal').value;
+        let valManual = document.getElementById('inputBadalManual').value;
+        
+        let namaPengganti = "";
+        if(valSelect === "MANUAL") {
+            if(valManual.trim() === "") return alert("Ketik nama pengganti!");
+            namaPengganti = valManual.trim();
+        } else {
+            if(valSelect === "") return alert("Pilih ustadz pengganti!");
+            namaPengganti = valSelect;
+        }
+
+        modalBadal.hide();
+        kirimAbsen(namaAsli, "Badal", namaPengganti);
+    }
+
+    // --- LOGIKA TABEL REKAP ABSEN ---
+    function renderRekapAbsen() {
+        let tglMulai = document.getElementById('rekapStart').value;
+        let tglAkhir = document.getElementById('rekapEnd').value;
+        let tbody = document.getElementById('tabelRekapAbsen');
+
+        if(!tglMulai || !tglAkhir) return alert("Pilih rentang tanggal (Dari & Sampai) terlebih dahulu!");
+        if(tglMulai > tglAkhir) return alert("Tanggal Akhir tidak boleh lebih kecil dari Tanggal Mulai!");
+
+        let dStart = new Date(tglMulai);
+        let dEnd = new Date(tglAkhir);
+
+        tbody.innerHTML = '';
+        
+        daftarPenyimakGlobal.sort().forEach(nama => {
+            let countHadir=0, countIzin=0, countAlfa=0;
+            let listBadal = [];
+
+            // Filter data sesuai rentang tanggal & nama penyimak
+            let absenOrangIni = dataAbsensiLengkap.filter(a => {
+                let dRecord = new Date(a.Tanggal);
+                return (a.Nama_Penyimak || a.nama_penyimak) === nama && dRecord >= dStart && dRecord <= dEnd;
+            });
+
+            absenOrangIni.forEach(a => {
+                let stat = a.Status_Kehadiran || a.status_kehadiran;
+                if(stat === 'Hadir') countHadir++;
+                else if(stat === 'Izin') countIzin++;
+                else if(stat === 'Alfa') countAlfa++;
+                else if(stat === 'Badal') {
+                    let ket = a.Keterangan_Badal || a.keterangan_badal;
+                    listBadal.push(ket);
+                }
+            });
+
+            let badalHTML = listBadal.length > 0 ? `<small class="text-info fw-bold">${listBadal.length}x (${listBadal.join(', ')})</small>` : '-';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-start ps-3 fw-bold">${nama}</td>
+                    <td><span class="badge bg-success">${countHadir}</span></td>
+                    <td><span class="badge bg-warning text-dark">${countIzin}</span></td>
+                    <td><span class="badge bg-danger">${countAlfa}</span></td>
+                    <td>${badalHTML}</td>
+                </tr>
+            `;
+        });
+    }
+
+
+    // ==================================================
+    // 3. FUNGSI DATA SANTRI (FITUR LAMA YANG SUDAH JADI)
+    // ==================================================
+    function toggleMode() {
+        const isAudit = document.getElementById('toggleAudit').checked;
+        document.getElementById('targetUjianContainer').classList.toggle('d-none', !isAudit);
+        document.getElementById('areaTabel').classList.toggle('mode-audit-active', isAudit);
+        document.getElementById('headerAksi').innerHTML = isAudit ? '<span class="text-danger"><i class="fas fa-file-invoice-dollar me-1"></i> Rincian Kekurangan & Denda</span>' : 'Aksi Harian';
+        renderTabelSantri();
+    }
+
+    function aturSortir(kolom) {
+        if(sortKolomAktif === kolom) { sortAscending = !sortAscending; } else { sortKolomAktif = kolom; sortAscending = true; }
+        ['nama', 'kitab', 'status'].forEach(k => { document.getElementById('th-'+k).classList.remove('th-active'); document.getElementById('th-'+k).querySelector('.sort-icon').className = 'fas fa-sort sort-icon'; });
+        document.getElementById('th-'+kolom).classList.add('th-active'); document.getElementById('th-'+kolom).querySelector('.sort-icon').className = sortAscending ? 'fas fa-sort-up sort-icon' : 'fas fa-sort-down sort-icon';
+        renderTabelSantri();
+    }
+
+    function formatRentangTahapan(arr) {
+        if (arr.length === 0) return "";
+        let rentang = []; let start = arr[0]; let end = arr[0];
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i] === end + 1) { end = arr[i]; } 
+            else { rentang.push(start === end ? start.toString() : `${start}-${end}`); start = arr[i]; end = arr[i]; }
+        }
+        rentang.push(start === end ? start.toString() : `${start}-${end}`);
+        return rentang.join(", ");
+    }
+
+    function renderTabelSantri() {
+        try {
+            let penyimakTerpilih = document.getElementById('filterPenyimak').value;
+            let grupTerpilih = document.getElementById('filterGrup').value;
+            const isAudit = document.getElementById('toggleAudit').checked;
+            const target = parseInt(document.getElementById('targetUjian').value) || 0;
+            let tbody = document.getElementById('tabelDataAdmin');
+            
+            let santriDifilter = dataSantriLengkap.filter(s => {
+                let namaPenyimak = String(s.Nama_Penyimak || s.nama_penyimak || "");
+                let pMatch = (penyimakTerpilih === "ALL" || namaPenyimak === penyimakTerpilih);
+                let gMatch = (grupTerpilih === "ALL" || String(s.Grup || s.grup || "").toLowerCase() === grupTerpilih.toLowerCase());
+                return pMatch && gMatch;
+            });
+
+            santriDifilter.sort((a, b) => {
+                let valA = '', valB = '';
+                if(sortKolomAktif === 'nama') { valA = String(a.Nama_Santri || a.nama_santri || '').toLowerCase(); valB = String(b.Nama_Santri || b.nama_santri || '').toLowerCase(); }
+                else if(sortKolomAktif === 'kitab') { valA = String(a.Nama_Kitab || a.nama_kitab || '').toLowerCase(); valB = String(b.Nama_Kitab || b.nama_kitab || '').toLowerCase(); }
+                else if(sortKolomAktif === 'status') { valA = (a.Status_Buku || a.status_buku) ? 1 : 0; valB = (b.Status_Buku || b.status_buku) ? 1 : 0; }
+                if(valA < valB) return sortAscending ? -1 : 1; if(valA > valB) return sortAscending ? 1 : -1; return 0;
+            });
+
+            tbody.innerHTML = '';
+            if(santriDifilter.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Belum ada data.</td></tr>'; return; }
+
+            santriDifilter.forEach(santri => {
+                let id = santri.ID || santri.id; 
+                let nama = santri.Nama_Santri || santri.nama_santri; 
+                let kitab = santri.Nama_Kitab || santri.nama_kitab;
+                let statusBuku = santri.Status_Buku || santri.status_buku || "";
+                
+                let statusBukuHTML = statusBuku !== "" ? `<span class="badge badge-status bg-sudah"><i class="fas fa-check-double me-1"></i> ${String(statusBuku).split(' ')[0]}</span>` : `<span class="badge badge-status bg-belum"><i class="fas fa-clock me-1"></i> Belum Kumpul</span>`;
+                let aksiHarianHTML = statusBuku !== "" ? `<button class="btn btn-outline-success btn-sm btn-action w-100 disabled"><i class="fas fa-check me-1"></i> Diserahkan</button>` : `<button class="btn btn-primary btn-sm btn-action w-100 shadow-sm" onclick="kumpulBuku('${id}', '${String(nama).replace(/'/g, "\\'")}')"><i class="fas fa-inbox me-1"></i> Kumpulkan IFHAMA</button>`;
+
+                let kolomAksiFinal = '';
+                if(isAudit) {
+                    let tahapanKosongArr = [];
+                    for(let i=1; i<=target; i++) { 
+                        let nilai = santri['Tahapan_'+i] || santri['tahapan_'+i]; 
+                        if(nilai === "" || nilai === null || nilai === undefined) tahapanKosongArr.push(i); 
+                    }
+                    let jumlahKurang = tahapanKosongArr.length;
+                    let teksRentang = formatRentangTahapan(tahapanKosongArr);
+                    if(jumlahKurang === 0) {
+                        kolomAksiFinal = `<span class="badge bg-success px-4 py-2 w-100 rounded-pill"><i class="fas fa-check-circle me-1"></i> Target Aman</span>`;
+                    } else {
+                        let denda = (jumlahKurang >= 1 && jumlahKurang <= 5) ? `Rp ${(jumlahKurang * 5000).toLocaleString('id-ID')}` : `${Math.ceil((jumlahKurang - 5) / 5)} Rim HVS`;
+                        kolomAksiFinal = `<div class="text-danger fw-bolder lh-sm bg-white border border-danger rounded-3 p-2 text-center shadow-sm" style="font-size:0.8rem;">Kurang ${jumlahKurang} (Tahap ${teksRentang})<br><span class="fs-6 mt-1 d-block text-dark">${denda}</span></div>`;
+                    }
+                } else { kolomAksiFinal = aksiHarianHTML; }
+
+                tbody.innerHTML += `<tr><td class="ps-3 fw-bold text-dark">${nama}</td><td class="text-secondary fw-semibold small">${kitab}</td><td>${statusBukuHTML}</td><td class="text-center pe-3">${kolomAksiFinal}</td></tr>`;
+            });
+        } catch(error) { console.error(error); }
+    }
+
+    window.exportKeExcel = function() {
+        // Logika export lama yang aman (sudah teruji)
+        const target = parseInt(document.getElementById('targetUjian').value) || 0;
+        let penyimakTerpilih = document.getElementById('filterPenyimak').value;
+        let grupTerpilih = document.getElementById('filterGrup').value;
+        let santriDifilter = dataSantriLengkap.filter(s => {
+            let pMatch = (penyimakTerpilih === "ALL" || String(s.Nama_Penyimak || s.nama_penyimak || "") === penyimakTerpilih);
+            let gMatch = (grupTerpilih === "ALL" || String(s.Grup || s.grup || "").toLowerCase() === grupTerpilih.toLowerCase());
+            return pMatch && gMatch;
+        });
+        if(santriDifilter.length === 0) { alert("Data kosong!"); return; }
+        
+        let dataBukuExcel = santriDifilter.map((s, index) => {
+            let tahapanKosongArr = [];
+            for(let i=1; i<=target; i++) { 
+                let nilai = s['Tahapan_'+i] || s['tahapan_'+i]; 
+                if(nilai === "" || nilai === null || nilai === undefined) tahapanKosongArr.push(i); 
+            }
+            let jumlahKurang = tahapanKosongArr.length;
+            let denda = "Aman";
+            if (jumlahKurang >= 1 && jumlahKurang <= 5) denda = `Rp ${(jumlahKurang * 5000).toLocaleString('id-ID')}`;
+            else if (jumlahKurang > 5) denda = `${Math.ceil((jumlahKurang - 5) / 5)} Rim HVS`;
+
+            return {
+                "No": index + 1, "Nama Mahasantri": s.Nama_Santri || s.nama_santri, "Grup": s.Grup || s.grup || "-",
+                "Kitab": s.Nama_Kitab || s.nama_kitab, "Ustadz Penyimak": s.Nama_Penyimak || s.nama_penyimak,
+                "Status Buku": (s.Status_Buku || s.status_buku) ? "TERKUMPUL" : "BELUM KUMPUL",
+                "Target Ujian": target, "Kekurangan": jumlahKurang, "Rincian Kurang": formatRentangTahapan(tahapanKosongArr) || "-",
+                "Total Denda": denda
+            };
+        });
+        let worksheet = XLSX.utils.json_to_sheet(dataBukuExcel);
+        worksheet['!cols'] = [{wch:5},{wch:25},{wch:10},{wch:20},{wch:20},{wch:15},{wch:12},{wch:18},{wch:25},{wch:20}];
+        let workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Tagihan");
+        XLSX.writeFile(workbook, `Rekap_Denda_${penyimakTerpilih === "ALL" ? "Semua" : penyimakTerpilih}.xlsx`);
+    }
+
+    window.kumpulBuku = function(idSantri, namaSantri) {
+        if(confirm(`Tandai buku ${namaSantri} telah diserahkan?`)) {
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'kumpul_buku', id: idSantri }) })
+            .then(res => res.json()).then(res => { tampilkanNotif(res.message, res.status); muatDataAdmin(); });
+        }
+    }
+
+    window.resetBuku = function() {
+        let filterGrup = document.getElementById('filterGrup').value;
+        if(confirm(`⚠ PERINGATAN BAHAYA!\nLanjutkan reset pengumpulan grup ${filterGrup}?`)) {
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'reset_buku', grup: filterGrup }) })
+            .then(res => res.json()).then(res => { tampilkanNotif(res.message, res.status); muatDataAdmin(); });
+        }
+    }
+
+    document.getElementById('th-nama').classList.add('th-active');
+    muatDataAdmin();
+</script>
+</body>
+</html>

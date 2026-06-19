@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Penyimak - IFHAMA Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #e8f5e9; font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif; color: #2d3436; }
+        .navbar { background: linear-gradient(135deg, #115f3b 0%, #198754 100%); box-shadow: 0 4px 15px rgba(25, 135, 84, 0.2); }
+        .card { border-radius: 16px; background-color: #f0fdf4; border: 1px solid #d1e7dd; box-shadow: 0 10px 30px rgba(25, 135, 84, 0.08); transition: all 0.3s ease; }
+        .table { background-color: transparent; }
+        .table > :not(caption) > * > * { padding: 1rem 1.2rem; border-bottom-color: #d1e7dd; vertical-align: middle; }
+        .table-light th { background-color: #d1e7dd; color: #0f5132; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; border-bottom: 2px solid #badbcc; }
+        .table-hover tbody tr:hover { background-color: #e8f8f5; transform: translateY(-1px); }
+        .badge-emas { background: linear-gradient(135deg, #F9D423 0%, #FF4E50 100%); color: white; font-size: 0.85rem; padding: 6px 16px; border-radius: 30px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-action { border-radius: 20px; padding: 5px 15px; font-weight: 700; font-size: 0.85rem; box-shadow: 0 2px 6px rgba(25, 135, 84, 0.2); }
+        .box-container { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; padding: 15px 5px; }
+        .box-wrapper { display: flex; flex-direction: column; align-items: center; }
+        .box-header { font-size: 11px; font-weight: 700; color: #a3b8ac; margin-bottom: 4px; }
+        .box-tahapan { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: default; box-shadow: 0 4px 10px rgba(0,0,0,0.04); transition: all 0.3s; }
+        .box-tahapan:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(25, 135, 84, 0.2); }
+        .box-filled { background: linear-gradient(135deg, #20c997 0%, #198754 100%); color: white; } 
+        .box-empty { background-color: #f8f9fa; color: #dfe6e9; border: 2px dashed #bdc3c7; } 
+        .box-target { background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%); color: white; animation: pulse 2s infinite; } 
+        .batas-ujian { width: 100%; text-align: center; font-size: 0.75rem; font-weight: 800; letter-spacing: 3px; padding: 8px; margin: 20px 0; border-radius: 8px; text-transform: uppercase; }
+        .batas-uts { background-color: #fff8e1; color: #f39c12; border: 1px solid #ffeaa7; }
+        .batas-uas { background-color: #e3f2fd; color: #2980b9; border: 1px solid #74b9ff; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.5); } 70% { box-shadow: 0 0 0 8px rgba(253, 126, 20, 0); } 100% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #e8f5e9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #a3b8ac; border-radius: 10px; }
+        .input-utama { font-size: 1.2rem; background-color: #e8f5e9; border: 2px solid #198754; color: #198754; text-align: center; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#"><i class="fas fa-book-quran me-2"></i>IFHAMA <span class="fw-light opacity-75">Penyimak</span></a>
+        <div class="d-flex align-items-center">
+            <span class="text-white me-4 fw-semibold" id="namaUserLengkap"><i class="fas fa-user-circle me-1 opacity-75"></i> Halo, User</span>
+            <button class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold me-2" data-bs-toggle="modal" data-bs-target="#modalGantiPassword" title="Ganti Password">
+                <i class="fas fa-key"></i> <span class="d-none d-md-inline">Ganti Password</span>
+            </button>
+            <button onclick="logout()" class="btn btn-sm btn-light rounded-pill px-3 fw-bold text-success shadow-sm"><i class="fas fa-sign-out-alt"></i> Keluar</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4 mb-5">
+    <div class="card mb-4">
+        <div class="card-header bg-transparent p-4 border-bottom-0 rounded-top-4">
+            <h5 class="mb-0 text-success fw-bolder"><i class="fas fa-users me-2"></i>Daftar Santri Bimbingan</h5>
+        </div>
+        <div class="table-responsive px-2 pb-2">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th class="ps-4">Nama Santri</th><th>Semester</th><th>Kitab</th><th>Progres</th><th class="text-end pe-4">Aksi</th></tr></thead>
+                <tbody id="dataSantriBimbingan"><tr><td colspan="5" class="text-center py-5"><div class="spinner-border text-success"></div></td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-transparent p-4 border-bottom-0 rounded-top-4">
+            <h5 class="mb-0 text-success fw-bolder"><i class="fas fa-history me-2"></i>Riwayat Setoran</h5>
+        </div>
+        <div class="table-responsive px-2 pb-2" style="max-height: 350px; overflow-y: auto;">
+            <table class="table table-hover align-middle text-center mb-0">
+                <thead class="table-light sticky-top"><tr><th>Waktu</th><th class="text-start ps-3">Nama Santri</th><th>Tahapan</th><th>Nilai Akhir</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody id="tabelRiwayatUtama"><tr><td colspan="6" class="text-center py-4 text-muted">Memuat riwayat...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNilai" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; background-color: #f0fdf4;">
+            <div class="modal-header bg-success text-white border-0 p-4">
+                <h5 class="modal-title fw-bolder" id="titleModalSantri">Progres Setoran</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-4" id="petaSetoran" style="max-height: 40vh; overflow-y: auto;"></div>
+                <div class="p-4 border-top" id="areaInputNilai" style="background-color: #ffffff;">
+                    <form id="formNilai">
+                        <input type="hidden" id="idSantriModal">
+                        <input type="hidden" id="namaSantriKirim">
+                        <input type="hidden" id="targetTahapanInput">
+                        
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+    <span class="text-secondary fw-bolder text-uppercase" style="font-size: 1.1rem; letter-spacing: 1px;">
+        <i class="fas fa-clipboard-list me-2 fs-4 text-success opacity-75" style="vertical-align: middle;"></i> AREA INPUT NILAI
+    </span>
+    <span class="badge bg-success-subtle text-success px-3 py-2 shadow-sm" style="font-size: 1rem;" id="labelTahapanBadges">Tahapan X</span>
+</div>
+                        
+                        <!-- WADAH KETERANGAN HALAMAN -->
+                        <div class="mb-3 text-end">
+                            <small class="text-primary fw-bold" id="infoKeteranganHalaman"><i class="fas fa-book-open me-1"></i> Hal: (Menunggu Data)</small>
+                        </div>
+
+                        <div class="row g-2 align-items-end">
+                            <div class="col-8"><label class="form-label fw-bolder text-success mb-1">NILAI AKHIR</label><input type="number" id="nilaiTahapan" class="form-control input-utama fw-bolder" required min="0" max="100" placeholder="Ketik Nilai (0-100)"></div>
+                            <div class="col-4"><button type="submit" id="btnSimpanNilai" class="btn btn-success w-100 fw-bold shadow-sm py-2" style="height: 48px;"><i class="fas fa-paper-plane me-1"></i> Simpan</button></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL GANTI PASSWORD TETAP ADA -->
+<div class="modal fade" id="modalGantiPassword" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-success text-white border-0 p-4">
+                <h5 class="modal-title fw-bolder"><i class="fas fa-key me-2"></i>Ganti Password</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <form id="formGantiPassword">
+                    <div class="mb-3"><label class="form-label fw-bold text-secondary">Password Lama</label><input type="password" id="passLama" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label fw-bold text-secondary">Password Baru</label><input type="password" id="passBaru" class="form-control border-success" required></div>
+                    <div class="mb-4"><label class="form-label fw-bold text-secondary">Konfirmasi Password Baru</label><input type="password" id="passBaruKonfirm" class="form-control border-success" required></div>
+                    <button type="submit" id="btnSimpanPassword" class="btn btn-success w-100 fw-bold shadow-sm py-3"><i class="fas fa-save me-2"></i>Simpan Password Baru</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index: 1060;">
+    <div id="notifToast" class="toast align-items-center text-white bg-success border-0 shadow-lg rounded-4" role="alert">
+        <div class="d-flex"><div class="toast-body fw-bold py-3 px-4" id="toastMessage"></div><button type="button" class="btn-close btn-close-white me-3 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz5TJaBRrrnS6-g8f81FAfKW_vgopn6Pd6sAq-I_okm1w4GodTPdTEtQHAbr4LmsHJU/exec'; 
+    const namaPenyimakAktif = sessionStorage.getItem('nama');
+    document.getElementById('namaUserLengkap').innerHTML = `<i class="fas fa-user-circle me-1 opacity-75"></i> Halo, ${namaPenyimakAktif}`;
+
+    let dataSantriGlobal = []; let dataRiwayatGlobal = []; let dataHalamanGlobal = [];
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+    function tampilkanNotif(pesan, tipe) {
+        const toastEl = document.getElementById('notifToast');
+        document.getElementById('toastMessage').innerHTML = tipe === 'success' ? `<i class="fas fa-check-circle me-2"></i> ${pesan}` : `<i class="fas fa-exclamation-triangle me-2"></i> ${pesan}`;
+        toastEl.className = `toast align-items-center text-white bg-${tipe} border-0 shadow-lg rounded-4`;
+        new bootstrap.Toast(toastEl, { delay: 4000 }).show();
+    }
+
+    function muatData() {
+        fetch(API_URL).then(res => res.json()).then(result => {
+            const tbody = document.getElementById('dataSantriBimbingan'); tbody.innerHTML = ''; 
+            dataSantriGlobal = result.data.filter(row => (row.Nama_Penyimak || row.nama_penyimak) === namaPenyimakAktif);
+            dataRiwayatGlobal = result.riwayat || [];
+            dataHalamanGlobal = result.halaman || [];
+
+            if (dataSantriGlobal.length > 0) {
+                dataSantriGlobal.forEach((row, index) => {
+                    let tahapanSelesai = 0;
+                    for(let i=1; i<=60; i++) { let cek = row['Tahapan_'+i] || row['tahapan_'+i]; if (cek !== "" && cek !== null && cek !== undefined) tahapanSelesai++; }
+                    tbody.innerHTML += `<tr><td class="ps-4 fw-bolder text-success">${row.Nama_Santri || row.nama_santri || '-'}</td><td><span class="badge bg-white text-secondary border px-2 py-1">${row.Semester || row.semester || '-'}</span></td><td class="text-secondary fw-semibold">${row.Nama_Kitab || row.nama_kitab || '-'}</td><td><div class="badge-emas"><i class="fas fa-star"></i> ${tahapanSelesai} / 60</div></td><td class="text-end pe-4"><button class="btn btn-success btn-action" onclick="bukaModal(${index})">Isi Nilai <i class="fas fa-arrow-right ms-1"></i></button></td></tr>`;
+                });
+            } else { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Belum ada santri bimbingan.</td></tr>'; }
+
+            const tbodyRiwayat = document.getElementById('tabelRiwayatUtama'); tbodyRiwayat.innerHTML = '';
+            const riwayatSaya = dataRiwayatGlobal.filter(r => (r.Penyimak || r.penyimak) === namaPenyimakAktif);
+
+            if(riwayatSaya.length > 0) {
+                riwayatSaya.reverse().forEach(r => {
+                    let id = r.ID_Santri || r.id_santri; let nama = r.Nama_Santri || r.nama_santri; let tahapan = r.Tahapan || r.tahapan; let nilai = r.Nilai || r.nilai; let status = r.Status || r.status; let waktu = r.Waktu || r.waktu;
+                    let badgeStatus = status === 'Lulus' ? 'bg-success text-white' : 'bg-danger text-white';
+                    tbodyRiwayat.innerHTML += `<tr><td class="small text-muted fw-medium">${waktu || '-'}</td><td class="fw-bolder text-secondary text-start ps-3">${nama || '-'}</td><td class="fw-bold text-success">${(tahapan || '').replace('_', ' ')}</td><td class="fw-bolder fs-6">${nilai || '-'}</td><td><span class="badge ${badgeStatus} px-3 py-2 rounded-pill shadow-sm">${status || '-'}</span></td><td><button class="btn btn-white text-danger btn-sm rounded-circle shadow-sm border" style="width: 30px; height: 30px; padding: 0;" onclick="hapusRiwayat('${id}', '${tahapan}', '${waktu}', '${status}')"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+                });
+            } else { tbodyRiwayat.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">Belum ada riwayat.</td></tr>'; }
+        });
+    }
+
+    muatData();
+    const modalNilai = new bootstrap.Modal(document.getElementById('modalNilai'));
+
+    function bukaModal(indexSantri) {
+        let santri = dataSantriGlobal[indexSantri];
+        document.getElementById('idSantriModal').value = santri.ID || santri.id; document.getElementById('namaSantriKirim').value = santri.Nama_Santri || santri.nama_santri; document.getElementById('titleModalSantri').innerText = "Progres: " + (santri.Nama_Santri || santri.nama_santri);
+        document.getElementById('nilaiTahapan').value = '';
+        
+        let petaHTML = '<div class="box-container">'; let targetTahapanKosong = null;
+        for(let i=1; i<=60; i++) {
+            let nilai = santri['Tahapan_'+i] || santri['tahapan_'+i];
+            petaHTML += `<div class="box-wrapper"><div class="box-header">THP ${i}</div>`;
+            if((nilai === "" || nilai === null || nilai === undefined) && targetTahapanKosong === null) { targetTahapanKosong = i; petaHTML += `<div class="box-tahapan box-target">🎯</div>`; }
+            else if (nilai !== "" && nilai !== null && nilai !== undefined) { petaHTML += `<div class="box-tahapan box-filled shadow-sm">${nilai}</div>`; }
+            else { petaHTML += `<div class="box-tahapan box-empty bg-white"><i class="fas fa-lock opacity-25" style="font-size:10px;"></i></div>`; }
+            petaHTML += `</div>`; 
+            if(i === 30) petaHTML += `</div><div class="batas-ujian batas-uts"><i class="fas fa-flag-checkered me-2"></i>Batas UTS</div><div class="box-container">`; if(i === 60) petaHTML += `</div><div class="batas-ujian batas-uas"><i class="fas fa-trophy me-2"></i>Batas UAS</div>`;
+        }
+        document.getElementById('petaSetoran').innerHTML = petaHTML;
+
+        if(targetTahapanKosong !== null) {
+            document.getElementById('areaInputNilai').classList.remove('d-none'); document.getElementById('targetTahapanInput').value = 'Tahapan_' + targetTahapanKosong; document.getElementById('labelTahapanBadges').innerText = 'Tahapan ' + targetTahapanKosong;
+            
+            // LOGIKA PENCARI HALAMAN OTOMATIS
+            let namaKitabSantri = santri.Nama_Kitab || santri.nama_kitab;
+            let teksHalaman = "(Belum Diatur Admin)"; // Teks default jika kosong
+            
+            // Cari baris kitab yang cocok di Master_Halaman
+            let dataKitab = dataHalamanGlobal.find(k => (k.Nama_Kitab || k.nama_kitab) === namaKitabSantri);
+            if(dataKitab) {
+                // Ambil nilai halamannya
+                let hal = dataKitab['Tahapan_' + targetTahapanKosong] || dataKitab['tahapan_' + targetTahapanKosong];
+                if(hal && hal !== "") teksHalaman = hal;
+            }
+            
+            document.getElementById('infoKeteranganHalaman').innerHTML = `<i class="fas fa-book-open me-1"></i> Hal: ${teksHalaman}`;
+
+        } else { document.getElementById('areaInputNilai').classList.add('d-none'); }
+        modalNilai.show();
+    }
+
+    document.getElementById('formNilai').addEventListener('submit', function(e) {
+        e.preventDefault(); const btn = document.getElementById('btnSimpanNilai'); btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>...'; btn.disabled = true;
+        // Tetap mengirim string kosong '-' untuk rincian agar tidak merusak format database
+        const dataKirim = { action: 'update_nilai', id: document.getElementById('idSantriModal').value, nama_santri: document.getElementById('namaSantriKirim').value, tahapan: document.getElementById('targetTahapanInput').value, nilai: document.getElementById('nilaiTahapan').value, penyimak: namaPenyimakAktif, pemahaman: '-', nahwu: '-', shorof: '-' };
+        fetch(API_URL, { method: 'POST', body: JSON.stringify(dataKirim) }).then(res => res.json()).then(res => {
+            modalNilai.hide(); btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Simpan'; btn.disabled = false; tampilkanNotif(res.message, parseInt(dataKirim.nilai) >= 70 ? 'success' : 'danger'); muatData(); 
+        });
+    });
+
+    window.hapusRiwayat = function(id, tahapan, waktu, status) {
+        if(confirm("Yakin ingin menghapus data riwayat ini?\n\n⚠️ Nilai di progres santri juga akan ikut TERHAPUS!")) {
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'hapus_riwayat', id: id, tahapan: tahapan, waktu: waktu, status: status }) }).then(res => res.json()).then(res => { tampilkanNotif('Data riwayat dibatalkan.', 'success'); muatData(); });
+        }
+    }
+
+    document.getElementById('formGantiPassword').addEventListener('submit', function(e) {
+        e.preventDefault(); const passLama = document.getElementById('passLama').value; const passBaru = document.getElementById('passBaru').value; const passBaruKonfirm = document.getElementById('passBaruKonfirm').value;
+        if (passBaru !== passBaruKonfirm) { tampilkanNotif('Konfirmasi password tidak cocok!', 'danger'); return; }
+        const btn = document.getElementById('btnSimpanPassword'); btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...'; btn.disabled = true;
+        fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'ganti_password', nama_lengkap: namaPenyimakAktif, password_lama: passLama, password_baru: passBaru }) }).then(res => res.json()).then(res => {
+            btn.innerHTML = '<i class="fas fa-save me-2"></i>Simpan Password Baru'; btn.disabled = false;
+            if(res.status === 'success') { bootstrap.Modal.getInstance(document.getElementById('modalGantiPassword')).hide(); document.getElementById('formGantiPassword').reset(); tampilkanNotif(res.message, 'success'); } else { tampilkanNotif(res.message, 'danger'); }
+        });
+    });
+</script>
+</body>
+</html>

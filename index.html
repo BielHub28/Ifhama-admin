@@ -160,8 +160,9 @@
                             <label class="form-label small fw-bold text-secondary">Sampai Tanggal:</label>
                             <input type="date" id="rekapEnd" class="form-control form-control-sm border-success">
                         </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-success btn-sm w-100 fw-bold" onclick="renderRekapAbsen()"><i class="fas fa-search me-1"></i> Tampilkan Rekap</button>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button class="btn btn-success btn-sm w-50 fw-bold shadow-sm" onclick="renderRekapAbsen()"><i class="fas fa-search me-1"></i> Tampilkan</button>
+                            <button class="btn btn-warning btn-sm w-50 fw-bold text-dark shadow-sm" onclick="exportRekapAbsenExcel()"><i class="fas fa-file-excel me-1"></i> Export Excel</button>
                         </div>
                     </div>
                     
@@ -177,7 +178,7 @@
                                 </tr>
                             </thead>
                             <tbody id="tabelRekapAbsen">
-                                <tr><td colspan="5" class="py-5 text-muted">Silakan pilih rentang tanggal dan klik "Tampilkan Rekap"</td></tr>
+                                <tr><td colspan="5" class="py-5 text-muted">Silakan pilih rentang tanggal dan klik "Tampilkan" atau "Export Excel"</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -262,12 +263,12 @@
             if(result.status === 'error') throw new Error(result.message);
             
             dataSantriLengkap = result.data || [];
-            dataAbsensiLengkap = result.absensi || []; // Datang dari Sheet Absensi_Penyimak
+            dataAbsensiLengkap = result.absensi || []; 
             
             // Ekstrak Nama Penyimak Asli
             daftarPenyimakGlobal = [...new Set(dataSantriLengkap.map(s => String(s.Nama_Penyimak || s.nama_penyimak || "")).filter(p => p !== ""))];
             
-            // Auto-Harvesting Nama Badal (Ambil nama dari database absen yang diketik manual)
+            // Auto-Harvesting Nama Badal 
             daftarBadalGlobal = [...new Set(dataAbsensiLengkap.map(a => String(a.Keterangan_Badal || a.keterangan_badal || "")).filter(b => b !== ""))];
             
             // Isi Dropdown Filter Santri
@@ -289,7 +290,7 @@
     }
 
     // ==================================================
-    // 2. FUNGSI ABSENSI PENYIMAK (BARU)
+    // 2. FUNGSI ABSENSI PENYIMAK 
     // ==================================================
     function renderAbsenHarian() {
         let tgl = document.getElementById('inputTanggalAbsen').value;
@@ -307,18 +308,15 @@
             let status = record ? (record.Status_Kehadiran || record.status_kehadiran) : "";
             let ket = record ? (record.Keterangan_Badal || record.keterangan_badal) : "";
 
-            // --- JURUS ANTI ERROR TANDA KUTIP ---
-            let namaAman = String(nama).replace(/'/g, "\\'");
-
             // UI Tombol (Warna berubah kalau aktif)
-            let btnHadir = `<button class="btn btn-absen ${status==='Hadir'?'btn-success shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${namaAman}', 'Hadir', '')">Hadir</button>`;
-            let btnIzin  = `<button class="btn btn-absen ${status==='Izin'?'btn-warning text-dark shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${namaAman}', 'Izin', '')">Izin</button>`;
-            let btnAlfa  = `<button class="btn btn-absen ${status==='Alfa'?'btn-danger shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${namaAman}', 'Alfa', '')">Alfa</button>`;
+            let btnHadir = `<button class="btn btn-absen ${status==='Hadir'?'btn-success shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Hadir', '')">Hadir</button>`;
+            let btnIzin  = `<button class="btn btn-absen ${status==='Izin'?'btn-warning text-dark shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Izin', '')">Izin</button>`;
+            let btnAlfa  = `<button class="btn btn-absen ${status==='Alfa'?'btn-danger shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Alfa', '')">Alfa</button>`;
             
             let teksBadal = status==='Badal' ? `Badal: ${ket}` : 'Badal...';
-            let btnBadal = `<button class="btn btn-absen ${status==='Badal'?'btn-info text-white shadow':'btn-outline-secondary'}" onclick="bukaModalBadal('${namaAman}')">${teksBadal}</button>`;
+            let btnBadal = `<button class="btn btn-absen ${status==='Badal'?'btn-info text-white shadow':'btn-outline-secondary'}" onclick="bukaModalBadal('${nama}')">${teksBadal}</button>`;
             
-            let btnBatal = status !== "" ? `<button class="btn btn-sm btn-outline-danger ms-2" title="Batalkan Absen" onclick="hapusAbsen('${namaAman}')"><i class="fas fa-trash"></i></button>` : '';
+            let btnBatal = status !== "" ? `<button class="btn btn-sm btn-outline-danger ms-2" title="Batalkan Absen" onclick="hapusAbsen('${nama}')"><i class="fas fa-trash"></i></button>` : '';
 
             tbody.innerHTML += `
                 <tr>
@@ -328,7 +326,7 @@
             `;
         });
     }
-    
+
     function kirimAbsen(nama, status, keterangan) {
         let tgl = document.getElementById('inputTanggalAbsen').value;
         if(!tgl) return alert("Pilih tanggal dulu!");
@@ -446,7 +444,6 @@
             `;
         });
     }
-
 
     // ==================================================
     // 3. FUNGSI DATA SANTRI (FITUR LAMA YANG SUDAH JADI)
@@ -569,6 +566,62 @@
         worksheet['!cols'] = [{wch:5},{wch:25},{wch:10},{wch:20},{wch:20},{wch:15},{wch:12},{wch:18},{wch:25},{wch:20}];
         let workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Tagihan");
         XLSX.writeFile(workbook, `Rekap_Denda_${penyimakTerpilih === "ALL" ? "Semua" : penyimakTerpilih}.xlsx`);
+    }
+
+    // ==================================================
+    // 4. FUNGSI EXPORT EXCEL UNTUK ABSENSI PENYIMAK (BARU)
+    // ==================================================
+    window.exportRekapAbsenExcel = function() {
+        let tglMulai = document.getElementById('rekapStart').value;
+        let tglAkhir = document.getElementById('rekapEnd').value;
+
+        if(!tglMulai || !tglAkhir) return alert("Pilih rentang tanggal (Dari & Sampai) terlebih dahulu untuk di-export!");
+        if(tglMulai > tglAkhir) return alert("Tanggal Akhir tidak boleh lebih kecil dari Tanggal Mulai!");
+
+        let dStart = new Date(tglMulai); 
+        let dEnd = new Date(tglAkhir);
+        
+        let dataRekapExcel = [];
+        let no = 1;
+
+        daftarPenyimakGlobal.sort().forEach(nama => {
+            let countHadir=0, countIzin=0, countAlfa=0; let listBadal = [];
+            
+            let absenOrangIni = dataAbsensiLengkap.filter(a => {
+                let dRecord = new Date(a.Tanggal);
+                return (a.Nama_Penyimak || a.nama_penyimak) === nama && dRecord >= dStart && dRecord <= dEnd;
+            });
+
+            absenOrangIni.forEach(a => {
+                let stat = a.Status_Kehadiran || a.status_kehadiran;
+                if(stat === 'Hadir') countHadir++;
+                else if(stat === 'Izin') countIzin++;
+                else if(stat === 'Alfa') countAlfa++;
+                else if(stat === 'Badal') { listBadal.push(a.Keterangan_Badal || a.keterangan_badal); }
+            });
+
+            let detailBadal = listBadal.length > 0 ? `${listBadal.length}x (${listBadal.join(', ')})` : '-';
+
+            dataRekapExcel.push({
+                "No": no++,
+                "Nama Penyimak": nama,
+                "Hadir": countHadir,
+                "Izin": countIzin,
+                "Alfa": countAlfa,
+                "Keterangan Dibadal": detailBadal
+            });
+        });
+
+        if(dataRekapExcel.length === 0) { alert("Tidak ada data untuk di-export!"); return; }
+
+        let worksheet = XLSX.utils.json_to_sheet(dataRekapExcel);
+        worksheet['!cols'] = [{wch:5}, {wch:35}, {wch:10}, {wch:10}, {wch:10}, {wch:40}];
+        
+        let workbook = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Absen");
+        
+        let namaFile = `Rekap_Absensi_IFHAMA_${tglMulai}_sd_${tglAkhir}.xlsx`;
+        XLSX.writeFile(workbook, namaFile);
     }
 
     window.kumpulBuku = function(idSantri, namaSantri) {

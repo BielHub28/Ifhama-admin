@@ -307,15 +307,18 @@
             let status = record ? (record.Status_Kehadiran || record.status_kehadiran) : "";
             let ket = record ? (record.Keterangan_Badal || record.keterangan_badal) : "";
 
+            // --- JURUS ANTI ERROR TANDA KUTIP ---
+            let namaAman = String(nama).replace(/'/g, "\\'");
+
             // UI Tombol (Warna berubah kalau aktif)
-            let btnHadir = `<button class="btn btn-absen ${status==='Hadir'?'btn-success shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Hadir', '')">Hadir</button>`;
-            let btnIzin  = `<button class="btn btn-absen ${status==='Izin'?'btn-warning text-dark shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Izin', '')">Izin</button>`;
-            let btnAlfa  = `<button class="btn btn-absen ${status==='Alfa'?'btn-danger shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${nama}', 'Alfa', '')">Alfa</button>`;
+            let btnHadir = `<button class="btn btn-absen ${status==='Hadir'?'btn-success shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${namaAman}', 'Hadir', '')">Hadir</button>`;
+            let btnIzin  = `<button class="btn btn-absen ${status==='Izin'?'btn-warning text-dark shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${namaAman}', 'Izin', '')">Izin</button>`;
+            let btnAlfa  = `<button class="btn btn-absen ${status==='Alfa'?'btn-danger shadow':'btn-outline-secondary'}" onclick="kirimAbsen('${namaAman}', 'Alfa', '')">Alfa</button>`;
             
             let teksBadal = status==='Badal' ? `Badal: ${ket}` : 'Badal...';
-            let btnBadal = `<button class="btn btn-absen ${status==='Badal'?'btn-info text-white shadow':'btn-outline-secondary'}" onclick="bukaModalBadal('${nama}')">${teksBadal}</button>`;
+            let btnBadal = `<button class="btn btn-absen ${status==='Badal'?'btn-info text-white shadow':'btn-outline-secondary'}" onclick="bukaModalBadal('${namaAman}')">${teksBadal}</button>`;
             
-            let btnBatal = status !== "" ? `<button class="btn btn-sm btn-outline-danger ms-2" title="Batalkan Absen" onclick="hapusAbsen('${nama}')"><i class="fas fa-trash"></i></button>` : '';
+            let btnBatal = status !== "" ? `<button class="btn btn-sm btn-outline-danger ms-2" title="Batalkan Absen" onclick="hapusAbsen('${namaAman}')"><i class="fas fa-trash"></i></button>` : '';
 
             tbody.innerHTML += `
                 <tr>
@@ -325,7 +328,7 @@
             `;
         });
     }
-
+    
     function kirimAbsen(nama, status, keterangan) {
         let tgl = document.getElementById('inputTanggalAbsen').value;
         if(!tgl) return alert("Pilih tanggal dulu!");
